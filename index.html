@@ -204,18 +204,18 @@
   <!-- ========== 匯出 / 匯入 ========== -->
   <section class="page" id="page-backup">
     <h2 class="page-title">匯出 / 匯入備份</h2>
-    <p class="page-desc">範本與設定儲存在本機瀏覽器。換電腦或分享給同事時，請用此頁備份與還原。</p>
+    <p class="page-desc">範本與設定儲存在本機瀏覽器。換電腦或分享給同事時，請用範本表格分享。</p>
     <div class="card">
-      <h3>匯出備份</h3>
-      <p class="hint">將所有範本與設定下載成一個 .json 檔。</p>
-      <button class="btn" id="btnExport">⬇️ 匯出備份檔</button>
+      <h3>下載範本表格</h3>
+      <p class="hint">將目前的範本下載成文字表格（可用 Excel 或 Numbers 打開），方便分享給其他老師或進行批量編輯。</p>
+      <button class="btn" id="btnDownloadExcel">📊 下載範本表格</button>
     </div>
     <div class="card">
-      <h3>匯入備份</h3>
-      <p class="hint">選擇先前匯出的 .json 檔，會覆蓋目前的範本與設定。</p>
-      <input type="file" id="importFile" accept="application/json">
+      <h3>上傳範本表格</h3>
+      <p class="hint">選擇下載的範本表格檔案，網站會自動讀取並導入範本。表格需包含「分類」「標題」「內容」三欄。</p>
+      <input type="file" id="excelImportFile" accept=".txt,.csv">
       <div style="margin-top:10px;">
-        <button class="btn ghost" id="btnImport">⬆️ 匯入並覆蓋</button>
+        <button class="btn ghost" id="btnImportExcel">⬆️ 上傳並導入</button>
       </div>
     </div>
     <div class="card">
@@ -524,34 +524,6 @@ document.getElementById("btnSaveLayout").addEventListener("click", ()=>{
   flash("layoutBadge");
 });
 
-/* ===================== 匯出 / 匯入 ===================== */
-document.getElementById("btnExport").addEventListener("click", ()=>{
-  const data = { type:"scb-backup", version:1, templates, settings };
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "聯絡簿通知單備份.json";
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-document.getElementById("btnImport").addEventListener("click", ()=>{
-  const f = document.getElementById("importFile").files[0];
-  if(!f){ alert("請先選擇備份檔。"); return; }
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const d = JSON.parse(reader.result);
-      if(!d.templates) throw new Error("格式不符");
-      if(!confirm("匯入將覆蓋目前的範本與設定，確定？")) return;
-      templates = d.templates;
-      if(d.settings) settings = Object.assign({}, DEFAULT_SETTINGS, d.settings);
-      save(LS_TPL, templates); save(LS_SET, settings);
-      reloadAll();
-      alert("匯入完成。");
-    }catch(err){ alert("匯入失敗：檔案格式不正確。"); }
-  };
-  reader.readAsText(f);
-});
 document.getElementById("btnReset").addEventListener("click", ()=>{
   if(!confirm("確定恢復內建範本？目前範本將被取代。")) return;
   templates = clone(DEFAULT_TEMPLATES);
@@ -566,6 +538,75 @@ function reloadAll(){
   refreshTplSelect(); renderTplList(); loadSelectedTpl();
   if(!noticeDate.value) noticeDate.value = todayStr();
   syncDatePreview();
+}
+
+/* ===================== CSV 匯出/匯入 ===================== */
+document.getElementById("btnDownloadExcel").addEventListener("click", ()=>{
+  if(!templates.length){ alert("沒有範本可匯出。"); return; }
+  const quote = (s)=>`"${(s||"").replace(/"/g,'""').replace(/\n/g," ")}"`;
+  let csv = "分類,標題,內容\n";
+  templates.forEach(t=>{
+    const cat = quote(t.category||"");
+    const title = quote(t.title||"");
+    const content = quote(t.contentHTML||"".replace(/<[^>]*>/g,""));
+    csv += `${cat},${title},${content}\n`;
+  });
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const bom = '﻿';
+  const blob = new Blob([bom + csv], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `聯絡單範本表格_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("btnImportExcel").addEventListener("click", ()=>{
+  const f = document.getElementById("excelImportFile").files[0];
+  if(!f){ alert("請先選擇檔案。"); return; }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const text = e.target.result;
+      let lines = text.split("\n").map(l=>l.trim()).filter(l=>l);
+      if(lines.length<2){ alert("檔案內容為空或格式錯誤。請確保檔案至少有標題列和一筆資料。"); return; }
+      const header = lines[0];
+      if(!header.includes("標題")){ alert("檔案欄位不正確。第一行應包含「分類,標題,內容」。"); return; }
+      lines.shift();
+      const imported = lines.map(l=>{
+        const parsed = parseCSVLine(l);
+        return {category:parsed[0]||"",title:parsed[1]||"",contentHTML:parsed[2]||""};
+      }).filter(r=>r.title);
+      if(!imported.length){ alert("未找到有效的範本資料。請確保「標題」欄位有內容。"); return; }
+      if(!confirm(`確定匯入 ${imported.length} 個範本？會覆蓋目前的範本。`)) return;
+      templates = imported;
+      save(LS_TPL, templates);
+      reloadAll();
+      document.getElementById("excelImportFile").value = "";
+      alert(`成功匯入 ${imported.length} 個範本。`);
+    }catch(err){ alert("匯入失敗："+err.message); }
+  };
+  reader.readAsText(f);
+});
+
+function parseCSVLine(line){
+  const result = [], current = [];
+  let inQuote = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(c==='"'){
+      if(inQuote && line[i+1]==='"'){ current.push('"'); i++; }
+      else inQuote = !inQuote;
+    }else if(c===',' && !inQuote){
+      result.push(current.join(''));
+      current.length = 0;
+    }else{
+      current.push(c);
+    }
+  }
+  result.push(current.join(''));
+  return result;
 }
 
 /* ===================== 啟動 ===================== */
