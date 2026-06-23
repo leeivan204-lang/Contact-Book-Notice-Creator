@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>特教班聯絡簿通知單製作網</title>
+<style>
+  :root{
+    --slip-width: 90mm;        /* 每份通知單寬度，可於設定頁調整 */
+    --primary:#2b3a55;
+    --accent:#3b6ea5;
+    --bg:#f4f6f9;
+    --border:#d9dee6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    background:var(--bg);color:#1f2733;display:flex;min-height:100vh;
+  }
+  /* ---------- 側邊欄 ---------- */
+  #sidebar{
+    width:210px;background:var(--primary);color:#fff;flex-shrink:0;
+    display:flex;flex-direction:column;padding:18px 0;
+  }
+  #sidebar h1{font-size:16px;margin:0 18px 6px;line-height:1.4;}
+  #sidebar .sub{font-size:11px;opacity:.7;margin:0 18px 18px;}
+  .nav-btn{
+    background:none;border:none;color:#cfd8e6;text-align:left;
+    padding:13px 18px;font-size:14.5px;cursor:pointer;border-left:4px solid transparent;
+    display:flex;align-items:center;gap:8px;font-family:inherit;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .nav-btn.active{background:rgba(255,255,255,.14);color:#fff;border-left-color:var(--accent);font-weight:bold;}
+  .nav-ico{width:18px;text-align:center;}
+  /* ---------- 主區 ---------- */
+  #main{flex:1;overflow:auto;padding:26px 30px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-title{font-size:20px;margin:0 0 4px;color:var(--primary);}
+  .page-desc{font-size:13px;color:#6b7686;margin:0 0 20px;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:18px;}
+  .card h3{margin:0 0 12px;font-size:15px;color:var(--primary);}
+  label.fld{display:block;font-size:13px;color:#52607a;margin:10px 0 4px;}
+  input[type=text],select,textarea,input[type=number]{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;
+    font-size:14px;font-family:inherit;background:#fff;
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row>div{flex:1;min-width:140px;}
+  button.btn{
+    background:var(--accent);color:#fff;border:none;border-radius:6px;
+    padding:9px 16px;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  button.btn:hover{filter:brightness(1.07);}
+  button.btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  button.btn.danger{background:#fff;color:#c0392b;border:1px solid #e0b4ae;}
+  button.btn.sm{padding:5px 10px;font-size:12.5px;}
+  .hint{font-size:12px;color:#8a94a6;margin-top:6px;}
+  /* ---------- 編輯工具列 ---------- */
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+    background:#eef2f7;border:1px solid var(--border);border-bottom:none;
+    border-radius:8px 8px 0 0;padding:8px;}
+  .tbtn{border:1px solid var(--border);background:#fff;border-radius:5px;
+    min-width:34px;height:32px;padding:0 8px;cursor:pointer;font-size:14px;font-family:inherit;}
+  .tbtn:hover{background:#f0f4fa;}
+  .tbtn.red{color:#d32f2f;font-weight:bold;}
+  .tbtn.hl{background:#fff176;}
+  .tb-sep{width:1px;height:22px;background:var(--border);margin:0 3px;}
+  /* ---------- 通知單外觀（編輯區與預覽共用） ---------- */
+  .slip{
+    width:var(--slip-width);background:#fff;border:1px solid #dcdcdc;
+    padding:4mm 7mm 0 7mm;font-size:13px;color:#333;line-height:1.6;font-weight:400;
+  }
+  .slip .s-head{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:1px solid #3b6ea5;padding-bottom:8px;margin-bottom:8px;gap:8px;}
+  .slip .s-title{font-size:16px;font-weight:600;letter-spacing:4px;color:#1a3a5c;white-space:nowrap;}
+  .slip .s-date{font-size:11px;color:#3b6ea5;letter-spacing:1px;white-space:nowrap;}
+  .slip .s-greet{margin-bottom:6px;color:#222;}
+  .slip .s-body{min-height:54px;outline:none;color:#333;}
+  .slip .s-body:focus{outline:2px dashed #cdd8e4;outline-offset:4px;}
+  .slip .s-sign{text-align:right;font-size:12px;color:#9a9a9a;letter-spacing:1px;margin-top:14px;}
+  .editor-wrap{display:inline-block;border:1px solid var(--border);
+    border-radius:0 0 8px 8px;padding:14px;background:#fbfcfe;}
+  /* ---------- 範本清單 ---------- */
+  .tpl-item{display:flex;align-items:center;gap:10px;border:1px solid var(--border);
+    border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+  .tpl-item .tpl-cat{font-size:11px;background:#eef2f7;color:#52607a;border-radius:4px;padding:2px 7px;}
+  .tpl-item .tpl-title{flex:1;font-size:14px;}
+  .tpl-item .tpl-actions{display:flex;gap:6px;}
+  .empty{color:#9aa3b2;font-size:13px;padding:14px;text-align:center;}
+  /* ---------- 對話框 ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,28,40,.45);display:none;
+    align-items:center;justify-content:center;z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:12px;padding:22px;width:560px;max-width:92vw;max-height:90vh;overflow:auto;}
+  .modal h3{margin:0 0 14px;color:var(--primary);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .badge{font-size:12px;color:#2e7d32;background:#e7f5e9;border-radius:5px;padding:6px 10px;display:none;}
+  .badge.show{display:inline-block;}
+</style>
+</head>
+<body>
+
+<!-- ================= 側邊欄 ================= -->
+<nav id="sidebar">
+  <h1>聯絡簿通知單製作網</h1>
+  <div class="sub">特教班專用 · 即點即印</div>
+  <button class="nav-btn active" data-page="make"><span class="nav-ico">📝</span>製作通知單</button>
+  <button class="nav-btn" data-page="templates"><span class="nav-ico">📋</span>範本設定</button>
+  <button class="nav-btn" data-page="layout"><span class="nav-ico">⚙️</span>版面與署名</button>
+  <button class="nav-btn" data-page="backup"><span class="nav-ico">💾</span>匯出 / 匯入</button>
+</nav>
+
+<main id="main">
+
+  <!-- ========== 製作通知單 ========== -->
+  <section class="page active" id="page-make">
+    <h2 class="page-title">製作通知單</h2>
+    <p class="page-desc">選擇範本後內容會帶入下方，可自由增減字與調整格式；選好份數即可列印。</p>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:2;">
+          <label class="fld">選擇範本</label>
+          <select id="tplSelect"></select>
+        </div>
+        <div style="flex:1.4;">
+          <label class="fld">通知日期</label>
+          <input type="text" id="noticeDate" placeholder="例：2026年6月23日">
+        </div>
+        <div>
+          <label class="fld">列印份數</label>
+          <input type="number" id="copies" min="1" max="60" value="6">
+        </div>
+      </div>
+      <p class="hint">最後一項「其他（自訂）」可從空白開始自行輸入；日期留空則不顯示。</p>
+    </div>
+
+    <div class="card">
+      <h3>編輯內容（反白文字後套用格式，可只針對選取的字）</h3>
+      <div class="toolbar">
+        <button class="tbtn" data-cmd="bold" title="粗體"><b>B</b></button>
+        <button class="tbtn red" data-cmd="red" title="紅字">紅</button>
+        <button class="tbtn hl" data-cmd="hl" title="黃底">黃底</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn" data-cmd="bigger" title="放大字">A＋</button>
+        <button class="tbtn" data-cmd="smaller" title="縮小字">A−</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn" data-cmd="clear" title="清除格式">清除</button>
+        <button class="tbtn" data-cmd="undo" title="復原">↶</button>
+      </div>
+      <div class="editor-wrap">
+        <div class="slip">
+          <div class="s-head">
+            <div class="s-title" id="ed-title">聯絡事項通知</div>
+            <div class="s-date" id="ed-date"></div>
+          </div>
+          <div class="s-greet" id="ed-greet">親愛的家長您好：</div>
+          <div class="s-body" id="editor" contenteditable="true"></div>
+          <div class="s-sign" id="ed-sign">特教班導師 敬上</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnPrint">🖨️ 列印 / 另存 PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 範本設定 ========== -->
+  <section class="page" id="page-templates">
+    <h2 class="page-title">範本設定</h2>
+    <p class="page-desc">在此新增、編輯、刪除或排序範本；變更會即時同步到「製作通知單」的選單。</p>
+    <div class="card">
+      <button class="btn" id="btnAddTpl">＋ 新增範本</button>
+      <span class="badge" id="tplBadge">已儲存</span>
+    </div>
+    <div id="tplList"></div>
+  </section>
+
+  <!-- ========== 版面與署名 ========== -->
+  <section class="page" id="page-layout">
+    <h2 class="page-title">版面與署名設定</h2>
+    <p class="page-desc">設定每張通知單的頁首標題、稱謂、署名與寬度。</p>
+    <div class="card">
+      <label class="fld">頁首標題</label>
+      <input type="text" id="setTitle">
+      <label class="fld">開頭稱謂</label>
+      <input type="text" id="setGreet">
+      <label class="fld">署名（右下）</label>
+      <input type="text" id="setSign">
+      <div class="row">
+        <div>
+          <label class="fld">每份寬度（mm，一頁約排 2 欄建議 88～92）</label>
+          <input type="number" id="setWidth" min="60" max="190" value="90">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn" id="btnSaveLayout">儲存設定</button>
+        <span class="badge" id="layoutBadge">已儲存</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 匯出 / 匯入 ========== -->
+  <section class="page" id="page-backup">
+    <h2 class="page-title">匯出 / 匯入備份</h2>
+    <p class="page-desc">範本與設定儲存在本機瀏覽器。換電腦或分享給同事時，請用此頁備份與還原。</p>
+    <div class="card">
+      <h3>匯出備份</h3>
+      <p class="hint">將所有範本與設定下載成一個 .json 檔。</p>
+      <button class="btn" id="btnExport">⬇️ 匯出備份檔</button>
+    </div>
+    <div class="card">
+      <h3>匯入備份</h3>
+      <p class="hint">選擇先前匯出的 .json 檔，會覆蓋目前的範本與設定。</p>
+      <input type="file" id="importFile" accept="application/json">
+      <div style="margin-top:10px;">
+        <button class="btn ghost" id="btnImport">⬆️ 匯入並覆蓋</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>還原預設範本</h3>
+      <p class="hint">清空目前範本，重新載入內建的特教常用範本。</p>
+      <button class="btn danger" id="btnReset">恢復內建範本</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== 範本編輯對話框 ========== -->
+<div class="modal-bg" id="tplModal">
+  <div class="modal">
+    <h3 id="modalTitle">新增範本</h3>
+    <label class="fld">分類</label>
+    <input type="text" id="mCat" placeholder="例：用藥提醒、活動通知">
+    <label class="fld">範本標題（顯示在選單）</label>
+    <input type="text" id="mTitle" placeholder="例：流感疫苗接種通知">
+    <label class="fld">預設內容（反白可套用格式）</label>
+    <div class="toolbar">
+      <button class="tbtn" data-mcmd="bold" title="粗體"><b>B</b></button>
+      <button class="tbtn red" data-mcmd="red" title="紅字">紅</button>
+      <button class="tbtn hl" data-mcmd="hl" title="黃底">黃底</button>
+      <span class="tb-sep"></span>
+      <button class="tbtn" data-mcmd="bigger">A＋</button>
+      <button class="tbtn" data-mcmd="smaller">A−</button>
+      <span class="tb-sep"></span>
+      <button class="tbtn" data-mcmd="clear">清除</button>
+    </div>
+    <div class="editor-wrap" style="display:block;">
+      <div class="s-body" id="mBody" contenteditable="true"
+           style="min-height:130px;outline:none;font-size:13px;line-height:1.7;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mCancel">取消</button>
+      <button class="btn" id="mSave">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 資料層 ===================== */
+const LS_TPL = "scb_templates_v1";
+const LS_SET = "scb_settings_v1";
+
+const DEFAULT_SETTINGS = {
+  headerTitle:"聯絡事項通知",
+  greeting:"親愛的家長您好：",
+  signature:"特教班導師 敬上",
+  slipWidthMM:90
+};
+
+const DEFAULT_TEMPLATES = [
+  { category:"請假提醒", title:"請假回條提醒",
+    contentHTML:`貴子弟今日未到校上課，請家長協助說明原因，並於返校時繳交請假單，謝謝您的配合。` },
+  { category:"用藥提醒", title:"在校用藥同意提醒",
+    contentHTML:`您好，孩子需於在校期間服藥，請務必填妥<span style="color:#d32f2f;font-weight:bold">「在校服藥委託單」</span>並附上藥袋，未附委託單恕無法協助餵藥，敬請配合。` },
+  { category:"活動通知", title:"校外教學通知",
+    contentHTML:`本班將於近期舉辦校外教學活動，請留意<span style="background-color:#fff176">回條繳交期限</span>並備妥所需物品，造成不便敬請見諒。` },
+  { category:"攜帶物品", title:"明日攜帶物品提醒",
+    contentHTML:`提醒明日請協助孩子帶齊：替換衣物、餐具、個人藥品。感謝您的協助。` },
+  { category:"行為回饋", title:"今日在校表現回饋",
+    contentHTML:`今日孩子在校情緒穩定、參與課程表現良好，特此與您分享，請繼續給予鼓勵。` }
+];
+
+let templates = load(LS_TPL, null);
+if(!templates){ templates = clone(DEFAULT_TEMPLATES); save(LS_TPL, templates); }
+let settings = Object.assign({}, DEFAULT_SETTINGS, load(LS_SET, {}));
+
+function load(k,def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ===================== 導覽切換 ===================== */
+document.querySelectorAll(".nav-btn").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    document.getElementById("page-"+b.dataset.page).classList.add("active");
+  });
+});
+
+/* ===================== 富文字格式 ===================== */
+try{ document.execCommand("styleWithCSS", false, true); }catch(e){}
+
+/* 把任意顏色字串正規化成 rgb()，方便比對 */
+function toRGB(c){
+  const d = document.createElement("div");
+  d.style.color = c; d.style.display = "none";
+  document.body.appendChild(d);
+  const rgb = getComputedStyle(d).color; d.remove();
+  return rgb;
+}
+/* 紅字 / 黃底：已套用就還原（再點一次取消），否則套用 */
+function toggleColor(kind, onColor, offColor){
+  const cmd = kind === "fore" ? "foreColor" : "hiliteColor";
+  let cur = document.queryCommandValue(cmd);
+  if(kind === "back" && (!cur || cur === "transparent"))
+    cur = document.queryCommandValue("backColor");
+  const target = (toRGB(cur) === toRGB(onColor)) ? offColor : onColor;
+  if(kind === "back"){
+    if(!document.execCommand("hiliteColor", false, target))
+      document.execCommand("backColor", false, target);
+  }else{
+    document.execCommand("foreColor", false, target);
+  }
+}
+
+function applyCmd(cmd){
+  switch(cmd){
+    case "bold": document.execCommand("bold"); break;
+    case "red": toggleColor("fore", "#d32f2f", "#333333"); break;
+    case "hl":  toggleColor("back", "#fff176", "transparent"); break;
+    case "bigger": fontDelta(1.15); break;
+    case "smaller": fontDelta(0.87); break;
+    case "clear": document.execCommand("removeFormat"); break;
+    case "undo": document.execCommand("undo"); break;
+  }
+}
+/* 字級以相對縮放包覆選取範圍（可累加） */
+function fontDelta(factor){
+  const sel = window.getSelection();
+  if(!sel.rangeCount || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const span = document.createElement("span");
+  span.style.fontSize = factor + "em";
+  try{ range.surroundContents(span); }
+  catch(e){ const frag = range.extractContents(); span.appendChild(frag); range.insertNode(span); }
+  sel.removeAllRanges();
+  const r = document.createRange(); r.selectNodeContents(span); sel.addRange(r);
+}
+
+/* 製作頁工具列 */
+document.querySelectorAll('#page-make .tbtn').forEach(b=>{
+  b.addEventListener("mousedown", e=>e.preventDefault()); // 保留選取
+  b.addEventListener("click", ()=>{ document.getElementById("editor").focus(); applyCmd(b.dataset.cmd); });
+});
+/* 對話框工具列 */
+document.querySelectorAll('#tplModal .tbtn').forEach(b=>{
+  b.addEventListener("mousedown", e=>e.preventDefault());
+  b.addEventListener("click", ()=>{ document.getElementById("mBody").focus(); applyCmd(b.dataset.mcmd); });
+});
+
+/* ===================== 製作頁 ===================== */
+const tplSelect = document.getElementById("tplSelect");
+const editor = document.getElementById("editor");
+
+function refreshTplSelect(){
+  const prev = tplSelect.value;
+  tplSelect.innerHTML = "";
+  templates.forEach((t,i)=>{
+    const o = document.createElement("option");
+    o.value = i; o.textContent = (t.category? "【"+t.category+"】":"") + t.title;
+    tplSelect.appendChild(o);
+  });
+  const other = document.createElement("option");
+  other.value = "other"; other.textContent = "其他（自訂）";
+  tplSelect.appendChild(other);
+  if(prev && (prev==="other" || templates[prev])) tplSelect.value = prev;
+}
+tplSelect.addEventListener("change", loadSelectedTpl);
+function loadSelectedTpl(){
+  if(tplSelect.value === "other"){ editor.innerHTML = ""; editor.focus(); return; }
+  const t = templates[tplSelect.value];
+  editor.innerHTML = t ? t.contentHTML : "";
+}
+
+function applySettingsToEditor(){
+  document.getElementById("ed-title").textContent = settings.headerTitle;
+  document.getElementById("ed-greet").textContent = settings.greeting;
+  document.getElementById("ed-sign").textContent  = settings.signature;
+  document.documentElement.style.setProperty("--slip-width", settings.slipWidthMM + "mm");
+}
+
+/* 通知日期：預設今天，可編輯，留空則不顯示 */
+const noticeDate = document.getElementById("noticeDate");
+function todayStr(){ const d=new Date(); return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日"; }
+function syncDatePreview(){
+  const v = noticeDate.value.trim();
+  document.getElementById("ed-date").textContent = v;
+}
+noticeDate.addEventListener("input", syncDatePreview);
+
+/* ===================== 列印 ===================== */
+function buildPrintDoc(){
+  const copies = Math.max(1, Math.min(60, parseInt(document.getElementById("copies").value)||1));
+  const body = editor.innerHTML;
+  const w = settings.slipWidthMM;
+  const dateText = document.getElementById("noticeDate").value.trim();
+  const dateCell = dateText ? `<div class="s-date">${esc(dateText)}</div>` : "";
+  const slip = `
+    <div class="slip">
+      <div class="s-head">
+        <div class="s-title">${esc(settings.headerTitle)}</div>
+        ${dateCell}
+      </div>
+      <div class="s-greet">${esc(settings.greeting)}</div>
+      <div class="s-body">${body}</div>
+      <div class="s-sign">${esc(settings.signature)}</div>
+    </div>`;
+  let slips = ""; for(let i=0;i<copies;i++) slips += slip;
+  return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>列印通知單</title>
+  <style>
+    @page{ size:A4; margin:10mm; }
+    *{box-sizing:border-box;}
+    body{margin:0;padding:0;font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;background:#fff;}
+    .sheet{width:210mm;margin:0 auto;padding:10mm;display:flex;flex-wrap:wrap;gap:0;align-content:flex-start;}
+    .slip{ width:${w}mm; border:1px dashed #cfcfcf; padding:4mm 7mm 0 7mm; font-size:13px; color:#333;
+           line-height:1.6; break-inside:avoid; page-break-inside:avoid; }
+    .slip .s-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #3b6ea5;padding-bottom:8px;margin-bottom:8px;gap:8px;}
+    .slip .s-title{font-size:16px;font-weight:600;letter-spacing:4px;color:#1a3a5c;white-space:nowrap;}
+    .slip .s-date{font-size:11px;color:#3b6ea5;letter-spacing:1px;white-space:nowrap;}
+    .slip .s-greet{margin-bottom:6px;color:#222;}
+    .slip .s-body{min-height:0;color:#333;}
+    .slip .s-sign{text-align:right;font-size:12px;color:#9a9a9a;letter-spacing:1px;margin-top:14px;}
+  </style></head><body>
+    <div class="sheet">${slips}</div>
+  </body></html>`;
+}
+
+document.getElementById("btnPrint").addEventListener("click", ()=>{
+  const win = window.open("", "_blank");
+  if(!win){ alert("瀏覽器封鎖了彈出視窗，請允許後再試。"); return; }
+  win.document.write(buildPrintDoc(false));
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 300);
+});
+
+/* ===================== 範本設定（清單 + CRUD + 排序） ===================== */
+const tplList = document.getElementById("tplList");
+function renderTplList(){
+  tplList.innerHTML = "";
+  if(!templates.length){ tplList.innerHTML = '<div class="empty">尚無範本，請點「新增範本」。</div>'; return; }
+  templates.forEach((t,i)=>{
+    const div = document.createElement("div");
+    div.className = "tpl-item";
+    div.innerHTML = `
+      <span class="tpl-cat">${esc(t.category||"未分類")}</span>
+      <span class="tpl-title">${esc(t.title)}</span>
+      <span class="tpl-actions">
+        <button class="btn ghost sm" data-act="up" data-i="${i}" ${i===0?"disabled":""}>↑</button>
+        <button class="btn ghost sm" data-act="down" data-i="${i}" ${i===templates.length-1?"disabled":""}>↓</button>
+        <button class="btn ghost sm" data-act="edit" data-i="${i}">編輯</button>
+        <button class="btn danger sm" data-act="del" data-i="${i}">刪除</button>
+      </span>`;
+    tplList.appendChild(div);
+  });
+}
+tplList.addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  const i = +b.dataset.i, act = b.dataset.act;
+  if(act==="up" && i>0){ [templates[i-1],templates[i]]=[templates[i],templates[i-1]]; persistTpl(); }
+  if(act==="down" && i<templates.length-1){ [templates[i+1],templates[i]]=[templates[i],templates[i+1]]; persistTpl(); }
+  if(act==="del"){ if(confirm("確定刪除「"+templates[i].title+"」？")){ templates.splice(i,1); persistTpl(); } }
+  if(act==="edit"){ openModal(i); }
+});
+function persistTpl(){ save(LS_TPL, templates); renderTplList(); refreshTplSelect(); flash("tplBadge"); }
+
+/* 對話框 */
+let editingIndex = null;
+const modal = document.getElementById("tplModal");
+function openModal(i){
+  editingIndex = (typeof i==="number") ? i : null;
+  document.getElementById("modalTitle").textContent = editingIndex===null ? "新增範本":"編輯範本";
+  const t = editingIndex===null ? {category:"",title:"",contentHTML:""} : templates[editingIndex];
+  document.getElementById("mCat").value = t.category||"";
+  document.getElementById("mTitle").value = t.title||"";
+  document.getElementById("mBody").innerHTML = t.contentHTML||"";
+  modal.classList.add("show");
+}
+function closeModal(){ modal.classList.remove("show"); }
+document.getElementById("btnAddTpl").addEventListener("click", ()=>openModal());
+document.getElementById("mCancel").addEventListener("click", closeModal);
+modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+document.getElementById("mSave").addEventListener("click", ()=>{
+  const title = document.getElementById("mTitle").value.trim();
+  if(!title){ alert("請輸入範本標題。"); return; }
+  const obj = {
+    category: document.getElementById("mCat").value.trim(),
+    title,
+    contentHTML: document.getElementById("mBody").innerHTML
+  };
+  if(editingIndex===null) templates.push(obj); else templates[editingIndex]=obj;
+  persistTpl(); closeModal();
+});
+
+/* ===================== 版面與署名 ===================== */
+function fillLayoutForm(){
+  document.getElementById("setTitle").value = settings.headerTitle;
+  document.getElementById("setGreet").value = settings.greeting;
+  document.getElementById("setSign").value  = settings.signature;
+  document.getElementById("setWidth").value = settings.slipWidthMM;
+}
+document.getElementById("btnSaveLayout").addEventListener("click", ()=>{
+  settings.headerTitle = document.getElementById("setTitle").value.trim() || DEFAULT_SETTINGS.headerTitle;
+  settings.greeting    = document.getElementById("setGreet").value.trim() || DEFAULT_SETTINGS.greeting;
+  settings.signature   = document.getElementById("setSign").value.trim()  || DEFAULT_SETTINGS.signature;
+  let w = parseInt(document.getElementById("setWidth").value)||90;
+  settings.slipWidthMM = Math.max(60, Math.min(190, w));
+  save(LS_SET, settings);
+  applySettingsToEditor();
+  flash("layoutBadge");
+});
+
+/* ===================== 匯出 / 匯入 ===================== */
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const data = { type:"scb-backup", version:1, templates, settings };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "聯絡簿通知單備份.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById("btnImport").addEventListener("click", ()=>{
+  const f = document.getElementById("importFile").files[0];
+  if(!f){ alert("請先選擇備份檔。"); return; }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const d = JSON.parse(reader.result);
+      if(!d.templates) throw new Error("格式不符");
+      if(!confirm("匯入將覆蓋目前的範本與設定，確定？")) return;
+      templates = d.templates;
+      if(d.settings) settings = Object.assign({}, DEFAULT_SETTINGS, d.settings);
+      save(LS_TPL, templates); save(LS_SET, settings);
+      reloadAll();
+      alert("匯入完成。");
+    }catch(err){ alert("匯入失敗：檔案格式不正確。"); }
+  };
+  reader.readAsText(f);
+});
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  if(!confirm("確定恢復內建範本？目前範本將被取代。")) return;
+  templates = clone(DEFAULT_TEMPLATES);
+  save(LS_TPL, templates);
+  reloadAll();
+});
+
+/* ===================== 共用 ===================== */
+function flash(id){ const b=document.getElementById(id); b.classList.add("show"); setTimeout(()=>b.classList.remove("show"),1500); }
+function reloadAll(){
+  applySettingsToEditor(); fillLayoutForm();
+  refreshTplSelect(); renderTplList(); loadSelectedTpl();
+  if(!noticeDate.value) noticeDate.value = todayStr();
+  syncDatePreview();
+}
+
+/* ===================== 啟動 ===================== */
+reloadAll();
+</script>
+</body>
+</html>
