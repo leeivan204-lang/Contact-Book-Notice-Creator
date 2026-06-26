@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>特教班聯絡簿通知單製作網</title>
+<style>
+  :root{
+    --slip-width: 90mm;        /* 每份通知單寬度，可於設定頁調整 */
+    --primary:#2b3a55;
+    --accent:#3b6ea5;
+    --bg:#f4f6f9;
+    --border:#d9dee6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    background:var(--bg);color:#1f2733;display:flex;min-height:100vh;
+  }
+  /* ---------- 側邊欄 ---------- */
+  #sidebar{
+    width:210px;background:var(--primary);color:#fff;flex-shrink:0;
+    display:flex;flex-direction:column;padding:18px 0;
+  }
+  #sidebar h1{font-size:16px;margin:0 18px 6px;line-height:1.4;}
+  #sidebar .sub{font-size:11px;opacity:.7;margin:0 18px 18px;}
+  .nav-btn{
+    background:none;border:none;color:#cfd8e6;text-align:left;
+    padding:13px 18px;font-size:14.5px;cursor:pointer;border-left:4px solid transparent;
+    display:flex;align-items:center;gap:8px;font-family:inherit;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .nav-btn.active{background:rgba(255,255,255,.14);color:#fff;border-left-color:var(--accent);font-weight:bold;}
+  .nav-ico{width:18px;text-align:center;}
+  /* ---------- 主區 ---------- */
+  #main{flex:1;overflow:auto;padding:26px 30px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-title{font-size:20px;margin:0 0 4px;color:var(--primary);}
+  .page-desc{font-size:13px;color:#6b7686;margin:0 0 20px;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:18px;}
+  .card h3{margin:0 0 12px;font-size:15px;color:var(--primary);}
+  label.fld{display:block;font-size:13px;color:#52607a;margin:10px 0 4px;}
+  input[type=text],select,textarea,input[type=number]{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;
+    font-size:14px;font-family:inherit;background:#fff;
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row>div{flex:1;min-width:140px;}
+  button.btn{
+    background:var(--accent);color:#fff;border:none;border-radius:6px;
+    padding:9px 16px;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  button.btn:hover{filter:brightness(1.07);}
+  button.btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  button.btn.danger{background:#fff;color:#c0392b;border:1px solid #e0b4ae;}
+  button.btn.sm{padding:5px 10px;font-size:12.5px;}
+  .hint{font-size:12px;color:#8a94a6;margin-top:6px;}
+  /* ---------- 編輯工具列 ---------- */
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+    background:#eef2f7;border:1px solid var(--border);border-bottom:none;
+    border-radius:8px 8px 0 0;padding:8px;}
+  .tbtn{border:1px solid var(--border);background:#fff;border-radius:5px;
+    min-width:34px;height:32px;padding:0 8px;cursor:pointer;font-size:14px;font-family:inherit;}
+  .tbtn:hover{background:#f0f4fa;}
+  .tbtn.red{color:#d32f2f;font-weight:bold;}
+  .tbtn.hl{background:#fff176;}
+  .tb-sep{width:1px;height:22px;background:var(--border);margin:0 3px;}
+  /* ---------- 通知單外觀（編輯區與預覽共用） ---------- */
+  .slip{
+    width:var(--slip-width);background:#fff;border:1px solid #dcdcdc;
+    padding:4mm 7mm 0 7mm;font-size:13px;color:#333;line-height:1.6;font-weight:400;
+  }
+  .slip .s-head{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:1px solid #3b6ea5;padding-bottom:8px;margin-bottom:8px;gap:8px;}
+  .slip .s-title{font-size:16px;font-weight:600;letter-spacing:4px;color:#1a3a5c;white-space:nowrap;}
+  .slip .s-date{font-size:11px;color:#3b6ea5;letter-spacing:1px;white-space:nowrap;}
+  .slip .s-greet{margin-bottom:6px;color:#222;}
+  .slip .s-body{min-height:54px;color:#333;}
+  .slip .s-item{outline:none;}
+  .slip .s-item:focus{outline:2px dashed #cdd8e4;outline-offset:3px;}
+  .slip .s-body.s-list .s-item{position:relative;padding-left:1.3em;margin-bottom:6px;}
+  .slip .s-body.s-list .s-item:last-child{margin-bottom:0;}
+  .slip .s-body.s-list .s-item::before{content:"•";position:absolute;left:2px;color:#333;}
+  .slip .s-sign{text-align:right;font-size:12px;color:#9a9a9a;letter-spacing:1px;margin-top:14px;}
+  /* ---------- 範本複選清單 ---------- */
+  .checklist{display:flex;flex-direction:column;gap:4px;max-height:230px;overflow:auto;
+    border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;}
+  .checklist label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;
+    padding:5px 6px;border-radius:5px;}
+  .checklist label:hover{background:#f0f4fa;}
+  .checklist .cat{font-size:11px;background:#eef2f7;color:#52607a;border-radius:4px;padding:1px 7px;}
+  .checklist .cl-cat-head{font-size:12px;font-weight:bold;color:#fff;background:var(--accent);
+    padding:4px 9px;border-radius:5px;margin:8px 0 3px;position:sticky;top:0;}
+  .checklist .cl-cat-head:first-child{margin-top:0;}
+  .checklist .cl-empty{font-size:13px;color:#9aa3b2;text-align:center;padding:14px;}
+  .slip{position:relative;}
+  .slip .qr-code{position:absolute;width:50px;height:50px;background:#fff;}
+  .slip .qr-code.top-right{top:4mm;right:4mm;}
+  .slip .qr-code.bottom-right{bottom:4mm;right:4mm;}
+  .slip .qr-code.bottom-left{bottom:4mm;left:4mm;}
+  .editor-wrap{display:inline-block;border:1px solid var(--border);
+    border-radius:0 0 8px 8px;padding:14px;background:#fbfcfe;}
+  /* ---------- 範本清單 ---------- */
+  .tpl-item{display:flex;align-items:center;gap:10px;border:1px solid var(--border);
+    border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+  .tpl-item .tpl-cat{font-size:11px;background:#eef2f7;color:#52607a;border-radius:4px;padding:2px 7px;}
+  .tpl-item .tpl-title{flex:1;font-size:14px;}
+  .tpl-item .tpl-actions{display:flex;gap:6px;}
+  .empty{color:#9aa3b2;font-size:13px;padding:14px;text-align:center;}
+  /* ---------- 對話框 ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,28,40,.45);display:none;
+    align-items:center;justify-content:center;z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:12px;padding:22px;width:560px;max-width:92vw;max-height:90vh;overflow:auto;}
+  .modal h3{margin:0 0 14px;color:var(--primary);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .badge{font-size:12px;color:#2e7d32;background:#e7f5e9;border-radius:5px;padding:6px 10px;display:none;}
+  .badge.show{display:inline-block;}
+  /* ---------- 使用說明 ---------- */
+  .guide{display:flex;gap:12px;flex-wrap:wrap;background:#eef4fb;border:1px solid #cfe0f2;
+    border-radius:10px;padding:14px 16px;margin-bottom:18px;}
+  .guide-step{flex:1;min-width:150px;display:flex;align-items:flex-start;gap:10px;}
+  .guide-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--accent);
+    color:#fff;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;}
+  .guide-txt{font-size:13px;color:#3a4a63;line-height:1.5;}
+  .guide-txt b{color:var(--primary);}
+  /* ---------- 進階功能收合 ---------- */
+  details.adv{margin-top:14px;border:1px solid #e0e5eb;border-radius:8px;background:#f5f7fa;}
+  details.adv>summary{list-style:none;cursor:pointer;padding:11px 14px;font-size:14px;
+    color:#52607a;font-weight:bold;display:flex;align-items:center;gap:8px;user-select:none;}
+  details.adv>summary::-webkit-details-marker{display:none;}
+  details.adv>summary::before{content:"▸";color:var(--accent);transition:transform .15s;}
+  details.adv[open]>summary::before{transform:rotate(90deg);}
+  details.adv .adv-body{padding:0 14px 14px;}
+  .tb-hint{font-size:12px;color:#8a94a6;margin:6px 0 0;}
+</style>
+<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- ================= 側邊欄 ================= -->
+<nav id="sidebar">
+  <h1>聯絡簿通知單製作網</h1>
+  <div class="sub">特教班專用 · 即點即印</div>
+  <button class="nav-btn active" data-page="make"><span class="nav-ico">📝</span>製作通知單</button>
+  <button class="nav-btn" data-page="templates"><span class="nav-ico">📋</span>範本設定</button>
+  <button class="nav-btn" data-page="layout"><span class="nav-ico">⚙️</span>版面與署名</button>
+  <button class="nav-btn" data-page="backup"><span class="nav-ico">💾</span>匯出 / 匯入</button>
+</nav>
+
+<main id="main">
+
+  <!-- ========== 製作通知單 ========== -->
+  <section class="page active" id="page-make">
+    <h2 class="page-title">製作通知單</h2>
+    <p class="page-desc">選擇範本後內容會帶入下方，可自由增減字與調整格式；選好份數即可列印。</p>
+
+    <div class="guide">
+      <div class="guide-step">
+        <div class="guide-num">1</div>
+        <div class="guide-txt"><b>勾選通知事項</b><br>從清單勾選一項或多項，內容會自動帶入。</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">2</div>
+        <div class="guide-txt"><b>微調內容</b><br>直接在預覽區增減字；要變色先「反白文字」再點格式鈕。</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">3</div>
+        <div class="guide-txt"><b>設定份數並列印</b><br>填份數後按「列印」，可直接印或另存 PDF。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="fld">選擇通知事項（可複選，勾選 2 項以上會自動以列點呈現）</label>
+      <input type="text" id="tplSearch" placeholder="🔍 搜尋通知事項（輸入關鍵字，例如：校外教學、適性）" style="margin-bottom:8px;">
+      <div id="tplChecklist" class="checklist"></div>
+      <div class="row" style="margin-top:12px;">
+        <div style="flex:1.4;">
+          <label class="fld">通知日期</label>
+          <input type="text" id="noticeDate" placeholder="例：2026年6月23日">
+        </div>
+        <div>
+          <label class="fld">列印份數</label>
+          <input type="number" id="copies" min="1" max="60" value="6">
+        </div>
+      </div>
+      <p class="hint">勾選「其他（自訂）」可加入一段空白內容自行輸入；日期留空則不顯示。</p>
+    </div>
+
+    <div class="card">
+      <h3>編輯內容（反白文字後套用格式，可只針對選取的字）</h3>
+      <div class="toolbar">
+        <button class="tbtn" data-cmd="bold" title="粗體"><b>B</b></button>
+        <button class="tbtn red" data-cmd="red" title="紅字">紅</button>
+        <button class="tbtn hl" data-cmd="hl" title="黃底">黃底</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn" data-cmd="bigger" title="放大字">A＋</button>
+        <button class="tbtn" data-cmd="smaller" title="縮小字">A−</button>
+        <span class="tb-sep"></span>
+        <button class="tbtn" data-cmd="clear" title="清除格式">清除</button>
+        <button class="tbtn" data-cmd="undo" title="復原">↶</button>
+      </div>
+      <p class="tb-hint">💡 先用滑鼠「反白選取」要變化的文字，再點上方按鈕（紅字、黃底、粗體、字級）。</p>
+      <div class="editor-wrap">
+        <div class="slip">
+          <div class="s-head">
+            <div class="s-title" id="ed-title">聯絡事項通知</div>
+            <div class="s-date" id="ed-date"></div>
+          </div>
+          <div class="s-greet" id="ed-greet">親愛的家長您好：</div>
+          <div class="s-body" id="editorBody"></div>
+          <div class="s-sign" id="ed-sign">特教班導師 敬上</div>
+        </div>
+      </div>
+      <details class="adv">
+        <summary>加入 QRCode（給家長掃描用）</summary>
+        <div class="adv-body">
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;">
+            <input type="checkbox" id="showQR" style="cursor:pointer;">
+            <span style="font-size:14px;color:#52607a;">顯示 QRCode</span>
+          </label>
+          <div id="qrSection" style="display:none;">
+            <label class="fld">網址</label>
+            <input type="text" id="qrUrl" placeholder="例如: https://example.com" style="margin-bottom:8px;">
+            <label class="fld">位置</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="radio" name="qrPos" value="top-right" checked> 右上
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="radio" name="qrPos" value="bottom-right"> 右下
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="radio" name="qrPos" value="bottom-left"> 左下
+              </label>
+            </div>
+          </div>
+        </div>
+      </details>
+      <details class="adv" id="queueDetails">
+        <summary id="queueSummary">列印清單（把多種通知單印在同一張紙）</summary>
+        <div class="adv-body">
+          <p class="hint" style="margin-top:0;">可把不同的通知單加入清單，按「列印」時全部排在同一張紙上，節省紙張。清單為空時，直接列印目前編輯的內容。</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn ghost sm" id="btnAddQueue">➕ 加入目前內容到清單</button>
+            <button class="btn ghost sm" id="btnClearQueue">清空清單</button>
+          </div>
+          <div id="queueList" style="margin-top:10px;"></div>
+        </div>
+      </details>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnPrint">🖨️ 列印 / 另存 PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 範本設定 ========== -->
+  <section class="page" id="page-templates">
+    <h2 class="page-title">範本設定</h2>
+    <p class="page-desc">在此新增、編輯、刪除或排序範本；變更會即時同步到「製作通知單」的選單。</p>
+    <div class="card">
+      <button class="btn" id="btnAddTpl">＋ 新增範本</button>
+      <span class="badge" id="tplBadge">已儲存</span>
+    </div>
+    <div id="tplList"></div>
+  </section>
+
+  <!-- ========== 版面與署名 ========== -->
+  <section class="page" id="page-layout">
+    <h2 class="page-title">版面與署名設定</h2>
+    <p class="page-desc">設定每張通知單的頁首標題、稱謂、署名與寬度。</p>
+    <div class="card">
+      <label class="fld">頁首標題</label>
+      <input type="text" id="setTitle">
+      <label class="fld">開頭稱謂</label>
+      <input type="text" id="setGreet">
+      <label class="fld">署名（右下）</label>
+      <input type="text" id="setSign">
+      <div class="row">
+        <div>
+          <label class="fld">每份寬度（mm，一頁約排 2 欄建議 88～92）</label>
+          <input type="number" id="setWidth" min="60" max="190" value="90">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn" id="btnSaveLayout">儲存設定</button>
+        <span class="badge" id="layoutBadge">已儲存</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 匯出 / 匯入 ========== -->
+  <section class="page" id="page-backup">
+    <h2 class="page-title">匯出 / 匯入備份</h2>
+    <p class="page-desc">範本與設定儲存在本機瀏覽器。換電腦或分享給同事時，請用範本表格分享。</p>
+    <div class="card">
+      <h3>下載範本表格</h3>
+      <p class="hint">將目前的範本下載成文字表格（可用 Excel 或 Numbers 打開），方便分享給其他老師或進行批量編輯。</p>
+      <button class="btn" id="btnDownloadExcel">📊 下載範本表格</button>
+    </div>
+    <div class="card">
+      <h3>上傳範本表格</h3>
+      <p class="hint">選擇下載的範本表格檔案，網站會自動讀取並導入範本。表格需包含「分類」「標題」「內容」三欄。</p>
+      <input type="file" id="excelImportFile" accept=".txt,.csv">
+      <div style="margin-top:10px;">
+        <button class="btn ghost" id="btnImportExcel">⬆️ 上傳並導入</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>還原預設範本</h3>
+      <p class="hint">清空目前範本，重新載入內建的特教常用範本。</p>
+      <button class="btn danger" id="btnReset">恢復內建範本</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== 範本編輯對話框 ========== -->
+<div class="modal-bg" id="tplModal">
+  <div class="modal">
+    <h3 id="modalTitle">新增範本</h3>
+    <label class="fld">分類</label>
+    <input type="text" id="mCat" placeholder="例：用藥提醒、活動通知">
+    <label class="fld">範本標題（顯示在選單）</label>
+    <input type="text" id="mTitle" placeholder="例：流感疫苗接種通知">
+    <label class="fld">預設內容（反白可套用格式）</label>
+    <div class="toolbar">
+      <button class="tbtn" data-mcmd="bold" title="粗體"><b>B</b></button>
+      <button class="tbtn red" data-mcmd="red" title="紅字">紅</button>
+      <button class="tbtn hl" data-mcmd="hl" title="黃底">黃底</button>
+      <span class="tb-sep"></span>
+      <button class="tbtn" data-mcmd="bigger">A＋</button>
+      <button class="tbtn" data-mcmd="smaller">A−</button>
+      <span class="tb-sep"></span>
+      <button class="tbtn" data-mcmd="clear">清除</button>
+    </div>
+    <div class="editor-wrap" style="display:block;">
+      <div class="s-body" id="mBody" contenteditable="true"
+           style="min-height:130px;outline:none;font-size:13px;line-height:1.7;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mCancel">取消</button>
+      <button class="btn" id="mSave">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 資料層 ===================== */
+const LS_TPL = "scb_templates_v1";
+const LS_SET = "scb_settings_v1";
+const LS_VER = "scb_tpl_ver";       // 使用者本機的內建範本版本
+const LS_SEED = "scb_tpl_seed";     // 上次推送給本機的內建範本快照
+const TPL_VERSION = 2;              // ★ 每次更新內建範本就把這個數字 +1，所有老師下次開啟會自動更新
+
+const DEFAULT_SETTINGS = {
+  headerTitle:"聯絡事項通知",
+  greeting:"親愛的家長您好：",
+  signature:"特教班導師 敬上",
+  slipWidthMM:90
+};
+
+const DEFAULT_TEMPLATES = [
+  { category:"家長日", title:"家長日參加通知",
+    contentHTML:`本學期家長日為_______________，詳細流程請參閱邀請函並簽名，謝謝！` },
+  { category:"校外教學", title:"預告本學期校外教學活動",
+    contentHTML:`本學期校外教學預定時段（校外教學皆自由參加）：` },
+  { category:"校外教學", title:"全校七年級校外教學調查",
+    contentHTML:`今日發下全校七年級校外教學調查表，因學校招標廠商費用較高，家長若參與則需付相同費用，學校調查完會發繳費單<br>□學生自己參加　□家長陪同參加，＿＿＿位　□學生不參加，請假在家` },
+  { category:"行事曆", title:"發放行事曆通知",
+    contentHTML:`本學期【行事曆】已貼入聯絡簿封底內頁，請家長參閱～` },
+  { category:"九年級適性安置", title:"適性安置報名表資料確認",
+    contentHTML:`今日發下【九年級適性安置報名表】（資料確認用），請家長協助核對基本資料。<br>若確認無誤，日後將發下「正式」報名表（無法更改），供家長簽名。<br>□資料正確　□資料須修正` },
+  { category:"校外教學", title:"校外教學通知單",
+    contentHTML:`發下  /    (   ) 校外教學通知單 1張，請家長勾選✔後簽名，繳回學校即可，謝謝！` },
+  { category:"九年級適性安置", title:"適性安置報名資料",
+    contentHTML:`發下新北市適性輔導安置學生報名資料（學生報名表、免評估申請表）二張，勞請家長在鉛筆圓圈處簽名繳回即可！謝謝您的配合＞＜` },
+  { category:"專業治療", title:"專團通知單--職能",
+    contentHTML:`發職能治療（  /　__：__  ）通知單 1 張，請 ✔ 後簽名交回，謝謝！！` },
+  { category:"專業治療", title:"專團通知單--物理",
+    contentHTML:`發物理治療（  /　__：__  ）通知單 1 張，請 ✔ 後簽名交回，謝謝！！` },
+  { category:"專業治療", title:"專團通知單--語言",
+    contentHTML:`發語言治療（  /　__：__  ）通知單 1 張，請 ✔ 後簽名交回，謝謝！！` },
+  { category:"健康檢查", title:"視力檢查回條",
+    contentHTML:`附上視力檢查回條，請家長協助回診複查，謝謝！` },
+  { category:"校外教學", title:"行前通知單",
+    contentHTML:`明天為班上校外教學，【未參加】的同學請在家自學，感謝家長們的配合與付出，謝謝！` },
+  { category:"九年級適性安置", title:"能力評估通知單",
+    contentHTML:`附上能力評估通知單，請家長協助保管，感謝！` },
+  { category:"假期通知", title:"假期通知單",
+    contentHTML:`明日________為_________假期，放___天~再請家長留意，謝謝！！` },
+  { category:"盥洗用具", title:"定期帶回盥洗用具",
+    contentHTML:`帶回【盥洗用具、棉被與枕頭】，請清洗乾淨後帶回學校。若需汰換，可自行決定，謝謝配合！` },
+  { category:"九年級畢業證書", title:"畢業證書資料核對",
+    contentHTML:`發下申辦【畢業證書】之學生「資料核對」，請依照數字1、2、3、4、5 進行資料確認。若無誤後，請家長於「中間處」簽名後繳回，謝謝您！` },
+  { category:"九年級適性安置", title:"志願選填單",
+    contentHTML:`附上志願選填單，請法定代理人在鉛筆圓圈處簽名，謝謝！` },
+  { category:"慶生會", title:"慶生會事前通知",
+    contentHTML:`下周有「慶生會」，邀請同學攜帶餅乾、點心一起分享，謝謝家長的協助與支持 ><` },
+  { category:"九年級餐盒", title:"九年級包高中餐盒",
+    contentHTML:`今天發下九年級學生包高中餐盒，食物皆為熟食，請盡早食用！` },
+  { category:"九年級適性安置", title:"適性安置結果通知書",
+    contentHTML:`今日發下適性安置結果通知書，報到時間會以該錄取學校公告為主，日後另行通知。` },
+  { category:"九年級畢業典禮", title:"參加畢業典禮調查",
+    contentHTML:`學校將於___月___日舉辦【畢業典禮】。為了方便統計及安排座位，想請問當天預計出席的人數。<br>共有_____位。` },
+  { category:"九年級畢業典禮", title:"畢業邀請函",
+    contentHTML:`今日發下畢業典禮邀請函____張！` },
+  { category:"專業治療", title:"專團服務紀錄表",
+    contentHTML:`發下專團服務紀錄表 1 張，請家長參閱，無須繳回，謝謝！` },
+  { category:"九年級歸還", title:"歸還學生健康紀錄表",
+    contentHTML:`歸還學生健康紀錄表 1 張，請家長留存備用，謝謝！` }
+];
+
+let templates = load(LS_TPL, null);
+let tplUpdateNotice = "";   // 啟動後顯示給使用者的提示
+(function initTemplates(){
+  const ver = load(LS_VER, 0);
+  if(!templates){
+    // 全新使用者：直接帶入最新內建範本
+    templates = clone(DEFAULT_TEMPLATES);
+    save(LS_TPL, templates); save(LS_VER, TPL_VERSION); save(LS_SEED, DEFAULT_TEMPLATES);
+    return;
+  }
+  if(ver < TPL_VERSION){
+    // 有新版內建範本
+    const seed = load(LS_SEED, null);
+    const customized = !seed || JSON.stringify(seed) !== JSON.stringify(templates);
+    if(!customized){
+      // 老師沒改過範本 → 自動更新為最新版
+      templates = clone(DEFAULT_TEMPLATES);
+      save(LS_TPL, templates);
+      tplUpdateNotice = `範本已自動更新為最新版（共 ${DEFAULT_TEMPLATES.length} 個）。`;
+    }else{
+      // 老師有自訂範本 → 啟動後詢問是否覆蓋
+      tplUpdateNotice = "__ASK__";
+    }
+    save(LS_VER, TPL_VERSION); save(LS_SEED, DEFAULT_TEMPLATES);
+  }
+})();
+let settings = Object.assign({}, DEFAULT_SETTINGS, load(LS_SET, {}));
+
+function load(k,def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ===================== 導覽切換 ===================== */
+document.querySelectorAll(".nav-btn").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    document.getElementById("page-"+b.dataset.page).classList.add("active");
+  });
+});
+
+/* ===================== 富文字格式 ===================== */
+try{ document.execCommand("styleWithCSS", false, true); }catch(e){}
+
+/* 把任意顏色字串正規化成 rgb()，方便比對 */
+function toRGB(c){
+  const d = document.createElement("div");
+  d.style.color = c; d.style.display = "none";
+  document.body.appendChild(d);
+  const rgb = getComputedStyle(d).color; d.remove();
+  return rgb;
+}
+/* 紅字 / 黃底：已套用就還原（再點一次取消），否則套用 */
+function toggleColor(kind, onColor, offColor){
+  const cmd = kind === "fore" ? "foreColor" : "hiliteColor";
+  let cur = document.queryCommandValue(cmd);
+  if(kind === "back" && (!cur || cur === "transparent"))
+    cur = document.queryCommandValue("backColor");
+  const target = (toRGB(cur) === toRGB(onColor)) ? offColor : onColor;
+  if(kind === "back"){
+    if(!document.execCommand("hiliteColor", false, target))
+      document.execCommand("backColor", false, target);
+  }else{
+    document.execCommand("foreColor", false, target);
+  }
+}
+
+function applyCmd(cmd){
+  switch(cmd){
+    case "bold": document.execCommand("bold"); break;
+    case "red": toggleColor("fore", "#d32f2f", "#333333"); break;
+    case "hl":  toggleColor("back", "#fff176", "transparent"); break;
+    case "bigger": fontDelta(1.15); break;
+    case "smaller": fontDelta(0.87); break;
+    case "clear": document.execCommand("removeFormat"); break;
+    case "undo": document.execCommand("undo"); break;
+  }
+}
+/* 字級以相對縮放包覆選取範圍（可累加） */
+function fontDelta(factor){
+  const sel = window.getSelection();
+  if(!sel.rangeCount || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const span = document.createElement("span");
+  span.style.fontSize = factor + "em";
+  try{ range.surroundContents(span); }
+  catch(e){ const frag = range.extractContents(); span.appendChild(frag); range.insertNode(span); }
+  sel.removeAllRanges();
+  const r = document.createRange(); r.selectNodeContents(span); sel.addRange(r);
+}
+
+/* 製作頁工具列：套用到目前作用中的編輯區塊 */
+let activeEditor = null;
+document.querySelectorAll('#page-make .tbtn').forEach(b=>{
+  b.addEventListener("mousedown", e=>e.preventDefault()); // 保留選取
+  b.addEventListener("click", ()=>{ if(activeEditor){ activeEditor.focus(); applyCmd(b.dataset.cmd); } });
+});
+/* 對話框工具列 */
+document.querySelectorAll('#tplModal .tbtn').forEach(b=>{
+  b.addEventListener("mousedown", e=>e.preventDefault());
+  b.addEventListener("click", ()=>{ document.getElementById("mBody").focus(); applyCmd(b.dataset.mcmd); });
+});
+
+/* ===================== 製作頁（多項通知事項複選） ===================== */
+const editorBody = document.getElementById("editorBody");
+const tplChecklist = document.getElementById("tplChecklist");
+
+/* 追蹤目前作用中的編輯區塊 */
+editorBody.addEventListener("focusin", e=>{ if(e.target.classList.contains("s-item")) activeEditor = e.target; });
+
+/* 建立勾選清單：依分類分組 + 關鍵字搜尋；勾選狀態以編輯區為準 */
+function refreshTplSelect(){
+  const q = (document.getElementById("tplSearch").value || "").trim().toLowerCase();
+  const selected = new Set([...editorBody.querySelectorAll(".s-item")].map(el=>el.dataset.key));
+  tplChecklist.innerHTML = "";
+
+  // 依分類分組（保留首次出現順序）
+  const groups = {}, order = [];
+  templates.forEach((t,i)=>{
+    const cat = t.category || "未分類";
+    if(!groups[cat]){ groups[cat] = []; order.push(cat); }
+    groups[cat].push({t, i});
+  });
+
+  let shown = 0;
+  order.forEach(cat=>{
+    const items = groups[cat].filter(({t})=> !q || (t.title+cat).toLowerCase().includes(q));
+    if(!items.length) return;
+    const head = document.createElement("div");
+    head.className = "cl-cat-head"; head.textContent = cat;
+    tplChecklist.appendChild(head);
+    items.forEach(({t,i})=>{ tplChecklist.appendChild(makeCheckItem(String(i), t.title)); shown++; });
+  });
+
+  // 「其他（自訂）」固定一組放最後
+  if(!q || "其他自訂".includes(q)){
+    const head = document.createElement("div");
+    head.className = "cl-cat-head"; head.textContent = "自訂";
+    tplChecklist.appendChild(head);
+    tplChecklist.appendChild(makeCheckItem("other", "其他（自訂）"));
+    shown++;
+  }
+
+  if(!shown){
+    const e = document.createElement("div");
+    e.className = "cl-empty"; e.textContent = "找不到符合的通知事項";
+    tplChecklist.appendChild(e);
+  }
+  // 依編輯區實際內容還原勾選狀態（不受搜尋過濾影響）
+  tplChecklist.querySelectorAll("input").forEach(c=>{ c.checked = selected.has(c.value); });
+}
+function makeCheckItem(value, title){
+  const label = document.createElement("label");
+  const cb = document.createElement("input");
+  cb.type = "checkbox"; cb.value = value;
+  cb.addEventListener("change", ()=>onTplToggle(value, cb.checked));
+  label.appendChild(cb);
+  const sp = document.createElement("span"); sp.textContent = title; label.appendChild(sp);
+  return label;
+}
+/* 搜尋即時過濾 */
+document.getElementById("tplSearch").addEventListener("input", refreshTplSelect);
+
+/* 勾選/取消 → 新增或移除對應編輯區塊 */
+function onTplToggle(key, checked){
+  if(checked){
+    const html = key==="other" ? "" : (templates[+key] ? templates[+key].contentHTML : "");
+    addItem(key, html);
+  }else{
+    const el = editorBody.querySelector(`.s-item[data-key="${key}"]`);
+    if(el) el.remove();
+  }
+  reorderItems();
+  updateBullets();
+  const el = editorBody.querySelector(`.s-item[data-key="${key}"]`);
+  if(checked && el){ activeEditor = el; el.focus(); }
+}
+function addItem(key, html){
+  if(editorBody.querySelector(`.s-item[data-key="${key}"]`)) return;
+  const div = document.createElement("div");
+  div.className = "s-item"; div.contentEditable = "true"; div.dataset.key = key;
+  div.innerHTML = html;
+  editorBody.appendChild(div);
+}
+/* 依範本順序排列，其他自訂放最後 */
+function reorderItems(){
+  const items = [...editorBody.querySelectorAll(".s-item")];
+  items.sort((a,b)=>{
+    const ka=a.dataset.key, kb=b.dataset.key;
+    if(ka==="other") return 1;
+    if(kb==="other") return -1;
+    return (+ka)-(+kb);
+  });
+  items.forEach(it=>editorBody.appendChild(it));
+}
+/* 2 項以上加列點 */
+function updateBullets(){
+  const n = editorBody.querySelectorAll(".s-item").length;
+  editorBody.classList.toggle("s-list", n>=2);
+}
+/* 取得內文 HTML（給列印用） */
+function getBodyHtml(){
+  const items = [...editorBody.querySelectorAll(".s-item")];
+  if(!items.length) return "";
+  if(items.length===1) return `<div class="s-body">${items[0].innerHTML}</div>`;
+  const lis = items.map(it=>`<div class="s-item">${it.innerHTML}</div>`).join("");
+  return `<div class="s-body s-list">${lis}</div>`;
+}
+
+/* ===================== 列印清單（混合多種通知單） ===================== */
+let printQueue = [];
+
+/* 擷取目前編輯內容成一筆規格 */
+function captureCurrent(){
+  return {
+    body: getBodyHtml(),
+    copies: Math.max(1, Math.min(60, parseInt(document.getElementById("copies").value)||1)),
+    date: document.getElementById("noticeDate").value.trim(),
+    qrUrl: (qrShowEnabled && qrUrl) ? qrUrl : "",
+    qrPos: qrPos
+  };
+}
+/* 內容摘要（去標籤、取前段文字） */
+function specSummary(spec){
+  const tmp = document.createElement("div");
+  tmp.innerHTML = spec.body || "";
+  let txt = (tmp.textContent || "").replace(/\s+/g," ").trim();
+  if(!txt) txt = "（空白內容）";
+  return txt.length>24 ? txt.slice(0,24)+"…" : txt;
+}
+function renderQueue(){
+  const box = document.getElementById("queueList");
+  const summary = document.getElementById("queueSummary");
+  summary.textContent = printQueue.length
+    ? `列印清單（已加入 ${printQueue.length} 種，按列印會一起印）`
+    : "列印清單（把多種通知單印在同一張紙）";
+  if(!printQueue.length){ box.innerHTML = ""; return; }
+  box.innerHTML = "";
+  printQueue.forEach((spec,i)=>{
+    const row = document.createElement("div");
+    row.className = "tpl-item";
+    row.style.marginBottom = "6px";
+    row.innerHTML = `
+      <span class="tpl-cat">${spec.copies} 份</span>
+      <span class="tpl-title" style="font-size:13px;">${esc(specSummary(spec))}</span>
+      <span class="tpl-actions">
+        <button class="btn danger sm" data-i="${i}">移除</button>
+      </span>`;
+    box.appendChild(row);
+  });
+}
+document.getElementById("queueList").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  printQueue.splice(+b.dataset.i, 1);
+  renderQueue();
+});
+document.getElementById("btnAddQueue").addEventListener("click", ()=>{
+  const spec = captureCurrent();
+  if(!spec.body){ alert("目前沒有可加入的內容，請先勾選或輸入通知事項。"); return; }
+  printQueue.push(spec);
+  renderQueue();
+});
+document.getElementById("btnClearQueue").addEventListener("click", ()=>{
+  if(!printQueue.length) return;
+  if(confirm("確定清空列印清單？")){ printQueue = []; renderQueue(); }
+});
+
+function applySettingsToEditor(){
+  document.getElementById("ed-title").textContent = settings.headerTitle;
+  document.getElementById("ed-greet").textContent = settings.greeting;
+  document.getElementById("ed-sign").textContent  = settings.signature;
+  document.documentElement.style.setProperty("--slip-width", settings.slipWidthMM + "mm");
+}
+
+/* 通知日期：預設今天，可編輯，留空則不顯示 */
+const noticeDate = document.getElementById("noticeDate");
+function todayStr(){ const d=new Date(); return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日"; }
+function syncDatePreview(){
+  const v = noticeDate.value.trim();
+  document.getElementById("ed-date").textContent = v;
+}
+noticeDate.addEventListener("input", syncDatePreview);
+
+/* ===================== 列印 ===================== */
+/* 一張通知單的 HTML（依規格） */
+function buildSlipHtml(spec){
+  const dateCell = spec.date ? `<div class="s-date">${esc(spec.date)}</div>` : "";
+  const qrHtml = spec.qrUrl ? `<div class="qr-code ${spec.qrPos}" data-url="${esc(spec.qrUrl)}"></div>` : "";
+  return `
+    <div class="slip">
+      <div class="s-head">
+        <div class="s-title">${esc(settings.headerTitle)}</div>
+        ${dateCell}
+      </div>
+      <div class="s-greet">${esc(settings.greeting)}</div>
+      ${spec.body}
+      <div class="s-sign">${esc(settings.signature)}</div>
+      ${qrHtml}
+    </div>`;
+}
+
+function buildPrintDoc(){
+  const w = settings.slipWidthMM;
+  // 清單有內容用清單，否則用目前編輯內容
+  const notices = printQueue.length ? printQueue : [captureCurrent()];
+  let slips = "";
+  notices.forEach(spec=>{
+    const copies = Math.max(1, Math.min(60, parseInt(spec.copies)||1));
+    const slipHtml = buildSlipHtml(spec);
+    for(let i=0;i<copies;i++) slips += slipHtml;
+  });
+  return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>列印通知單</title>
+  <style>
+    @page{ size:A4; margin:10mm; }
+    *{box-sizing:border-box;}
+    body{margin:0;padding:0;font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;background:#fff;}
+    .sheet{width:210mm;margin:0 auto;padding:10mm;display:flex;flex-wrap:wrap;gap:0;align-content:flex-start;}
+    .slip{ width:${w}mm; border:1px dashed #cfcfcf; padding:4mm 7mm 0 7mm; font-size:13px; color:#333;
+           line-height:1.6; break-inside:avoid; page-break-inside:avoid; }
+    .slip .s-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #3b6ea5;padding-bottom:8px;margin-bottom:8px;gap:8px;}
+    .slip .s-title{font-size:16px;font-weight:600;letter-spacing:4px;color:#1a3a5c;white-space:nowrap;}
+    .slip .s-date{font-size:11px;color:#3b6ea5;letter-spacing:1px;white-space:nowrap;}
+    .slip .s-greet{margin-bottom:6px;color:#222;}
+    .slip .s-body{min-height:0;color:#333;}
+    .slip .s-body.s-list .s-item{position:relative;padding-left:1.3em;margin-bottom:6px;}
+    .slip .s-body.s-list .s-item:last-child{margin-bottom:0;}
+    .slip .s-body.s-list .s-item::before{content:"•";position:absolute;left:2px;color:#333;}
+    .slip .s-sign{text-align:right;font-size:12px;color:#9a9a9a;letter-spacing:1px;margin-top:14px;}
+    .slip{position:relative;}
+    .slip .qr-code{position:absolute;width:50px;height:50px;background:#fff;}
+    .slip .qr-code.top-right{top:4mm;right:4mm;}
+    .slip .qr-code.bottom-right{bottom:4mm;right:4mm;}
+    .slip .qr-code.bottom-left{bottom:4mm;left:4mm;}
+  </style>
+  </head><body>
+    <div class="sheet">${slips}</div>
+    <script>
+      document.querySelectorAll(".qr-code").forEach(el=>{
+        const u = el.dataset.url;
+        if(!u) return;
+        const img = document.createElement("img");
+        img.src = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent(u);
+        img.style.width = "50px";
+        img.style.height = "50px";
+        el.appendChild(img);
+      });
+    <\/script>
+  </body></html>`;
+}
+
+document.getElementById("btnPrint").addEventListener("click", ()=>{
+  const win = window.open("", "_blank");
+  if(!win){ alert("瀏覽器封鎖了彈出視窗，請允許後再試。"); return; }
+  win.document.write(buildPrintDoc(false));
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 300);
+});
+
+/* ===================== 範本設定（清單 + CRUD + 排序） ===================== */
+const tplList = document.getElementById("tplList");
+function renderTplList(){
+  tplList.innerHTML = "";
+  if(!templates.length){ tplList.innerHTML = '<div class="empty">尚無範本，請點「新增範本」。</div>'; return; }
+  templates.forEach((t,i)=>{
+    const div = document.createElement("div");
+    div.className = "tpl-item";
+    div.innerHTML = `
+      <span class="tpl-cat">${esc(t.category||"未分類")}</span>
+      <span class="tpl-title">${esc(t.title)}</span>
+      <span class="tpl-actions">
+        <button class="btn ghost sm" data-act="up" data-i="${i}" ${i===0?"disabled":""}>↑</button>
+        <button class="btn ghost sm" data-act="down" data-i="${i}" ${i===templates.length-1?"disabled":""}>↓</button>
+        <button class="btn ghost sm" data-act="edit" data-i="${i}">編輯</button>
+        <button class="btn danger sm" data-act="del" data-i="${i}">刪除</button>
+      </span>`;
+    tplList.appendChild(div);
+  });
+}
+tplList.addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  const i = +b.dataset.i, act = b.dataset.act;
+  if(act==="up" && i>0){ [templates[i-1],templates[i]]=[templates[i],templates[i-1]]; persistTpl(); }
+  if(act==="down" && i<templates.length-1){ [templates[i+1],templates[i]]=[templates[i],templates[i+1]]; persistTpl(); }
+  if(act==="del"){ if(confirm("確定刪除「"+templates[i].title+"」？")){ templates.splice(i,1); persistTpl(); } }
+  if(act==="edit"){ openModal(i); }
+});
+function persistTpl(){ save(LS_TPL, templates); renderTplList(); refreshTplSelect(); flash("tplBadge"); }
+
+/* 對話框 */
+let editingIndex = null;
+const modal = document.getElementById("tplModal");
+function openModal(i){
+  editingIndex = (typeof i==="number") ? i : null;
+  document.getElementById("modalTitle").textContent = editingIndex===null ? "新增範本":"編輯範本";
+  const t = editingIndex===null ? {category:"",title:"",contentHTML:""} : templates[editingIndex];
+  document.getElementById("mCat").value = t.category||"";
+  document.getElementById("mTitle").value = t.title||"";
+  document.getElementById("mBody").innerHTML = t.contentHTML||"";
+  modal.classList.add("show");
+}
+function closeModal(){ modal.classList.remove("show"); }
+document.getElementById("btnAddTpl").addEventListener("click", ()=>openModal());
+document.getElementById("mCancel").addEventListener("click", closeModal);
+modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+document.getElementById("mSave").addEventListener("click", ()=>{
+  const title = document.getElementById("mTitle").value.trim();
+  if(!title){ alert("請輸入範本標題。"); return; }
+  const obj = {
+    category: document.getElementById("mCat").value.trim(),
+    title,
+    contentHTML: document.getElementById("mBody").innerHTML
+  };
+  if(editingIndex===null) templates.push(obj); else templates[editingIndex]=obj;
+  persistTpl(); closeModal();
+});
+
+/* ===================== 版面與署名 ===================== */
+function fillLayoutForm(){
+  document.getElementById("setTitle").value = settings.headerTitle;
+  document.getElementById("setGreet").value = settings.greeting;
+  document.getElementById("setSign").value  = settings.signature;
+  document.getElementById("setWidth").value = settings.slipWidthMM;
+}
+document.getElementById("btnSaveLayout").addEventListener("click", ()=>{
+  settings.headerTitle = document.getElementById("setTitle").value.trim() || DEFAULT_SETTINGS.headerTitle;
+  settings.greeting    = document.getElementById("setGreet").value.trim() || DEFAULT_SETTINGS.greeting;
+  settings.signature   = document.getElementById("setSign").value.trim()  || DEFAULT_SETTINGS.signature;
+  let w = parseInt(document.getElementById("setWidth").value)||90;
+  settings.slipWidthMM = Math.max(60, Math.min(190, w));
+  save(LS_SET, settings);
+  applySettingsToEditor();
+  flash("layoutBadge");
+});
+
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  if(!confirm("確定恢復內建範本？目前範本將被取代。")) return;
+  templates = clone(DEFAULT_TEMPLATES);
+  save(LS_TPL, templates); save(LS_VER, TPL_VERSION); save(LS_SEED, DEFAULT_TEMPLATES);
+  reloadAll(true);
+});
+
+/* ===================== 共用 ===================== */
+function flash(id){ const b=document.getElementById(id); b.classList.add("show"); setTimeout(()=>b.classList.remove("show"),1500); }
+function reloadAll(freshSelection){
+  if(freshSelection){ editorBody.innerHTML = ""; printQueue = []; renderQueue();
+    document.getElementById("tplSearch").value = ""; }
+  applySettingsToEditor(); fillLayoutForm();
+  refreshTplSelect(); renderTplList();
+  // 編輯區為空時：預設勾選第一個範本，帶入內容
+  if(!editorBody.querySelector(".s-item")){
+    const first = tplChecklist.querySelector("input");
+    if(first){ first.checked = true; onTplToggle(first.value, true); }
+  }
+  updateBullets();
+  if(!noticeDate.value) noticeDate.value = todayStr();
+  syncDatePreview();
+}
+
+/* ===================== CSV 匯出/匯入 ===================== */
+/* HTML 內文 → 純文字（<br>、</div> 轉換行，其餘標籤移除，並還原 entity） */
+function htmlToPlain(html){
+  let s = (html||"")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+  const ta = document.createElement("textarea");
+  ta.innerHTML = s;
+  return ta.value.replace(/\n+$/,"");
+}
+document.getElementById("btnDownloadExcel").addEventListener("click", ()=>{
+  if(!templates.length){ alert("沒有範本可匯出。"); return; }
+  const quote = (s)=>`"${(s||"").replace(/"/g,'""')}"`;  // 保留換行（CSV 引號內合法）
+  let csv = "分類,標題,內容\n";
+  templates.forEach(t=>{
+    const cat = quote(t.category||"");
+    const title = quote(t.title||"");
+    const content = quote(htmlToPlain(t.contentHTML||""));
+    csv += `${cat},${title},${content}\n`;
+  });
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const bom = '﻿';
+  const blob = new Blob([bom + csv], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `聯絡單範本表格_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("btnImportExcel").addEventListener("click", ()=>{
+  const f = document.getElementById("excelImportFile").files[0];
+  if(!f){ alert("請先選擇檔案。"); return; }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      let text = String(e.target.result).replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      const rows = parseCSV(text).filter(r=>r.some(c=>c.trim()!==""));
+      if(rows.length<2){ alert("檔案內容為空或格式錯誤。請確保檔案至少有標題列和一筆資料。"); return; }
+      if(!(rows[0][1]||"").includes("標題") && !(rows[0].join(",")).includes("標題")){
+        alert("檔案欄位不正確。第一行應包含「分類,標題,內容」。"); return;
+      }
+      rows.shift();
+      const imported = rows.map(r=>({
+        category: (r[0]||"").trim(),
+        title: (r[1]||"").trim(),
+        contentHTML: esc(r[2]||"").replace(/\n/g, "<br>")
+      })).filter(r=>r.title);
+      if(!imported.length){ alert("未找到有效的範本資料。請確保「標題」欄位有內容。"); return; }
+      if(!confirm(`確定匯入 ${imported.length} 個範本？會覆蓋目前的範本。`)) return;
+      templates = imported;
+      save(LS_TPL, templates);  // 視為使用者自訂，不更動 seed（保護日後版本更新時不被自動覆蓋）
+      reloadAll(true);
+      document.getElementById("excelImportFile").value = "";
+      alert(`成功匯入 ${imported.length} 個範本。`);
+    }catch(err){ alert("匯入失敗："+err.message); }
+  };
+  reader.readAsText(f);
+});
+
+/* 完整 CSV 解析：支援引號內的逗號與換行（多行儲存格） */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = "", inQuote = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuote){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuote = false;
+      }else field += c;
+    }else{
+      if(c === '"') inQuote = true;
+      else if(c === ','){ row.push(field); field = ""; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
+      else field += c;
+    }
+  }
+  if(field !== "" || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+/* ===================== QRCode ===================== */
+let qrShowEnabled = false, qrUrl = "", qrPos = "top-right";
+const showQRCheckbox = document.getElementById("showQR");
+const qrSection = document.getElementById("qrSection");
+const qrUrlInput = document.getElementById("qrUrl");
+const qrPosRadios = document.querySelectorAll("input[name='qrPos']");
+
+showQRCheckbox.addEventListener("change", ()=>{
+  qrShowEnabled = showQRCheckbox.checked;
+  qrSection.style.display = qrShowEnabled ? "block" : "none";
+  updateQRPreview();
+});
+
+qrUrlInput.addEventListener("input", ()=>{
+  qrUrl = qrUrlInput.value.trim();
+  updateQRPreview();
+});
+
+qrPosRadios.forEach(r=>r.addEventListener("change", ()=>{
+  qrPos = document.querySelector("input[name='qrPos']:checked").value;
+  updateQRPreview();
+}));
+
+function updateQRPreview(){
+  const slip = document.querySelector(".slip");
+  let qrEl = slip.querySelector(".qr-code");
+  if(qrEl) qrEl.remove();
+  if(!qrShowEnabled || !qrUrl) return;
+  const qrDiv = document.createElement("div");
+  qrDiv.className = `qr-code ${qrPos}`;
+  const img = document.createElement("img");
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(qrUrl)}`;
+  img.style.width = "50px";
+  img.style.height = "50px";
+  qrDiv.appendChild(img);
+  slip.appendChild(qrDiv);
+}
+
+/* ===================== 啟動 ===================== */
+reloadAll();
+
+/* 範本更新提示 */
+if(tplUpdateNotice === "__ASK__"){
+  if(confirm("偵測到新版內建範本。\n你目前有自訂過範本——要以最新版覆蓋嗎？\n（建議先用「下載範本表格」備份；按取消則保留你目前的範本）")){
+    templates = clone(DEFAULT_TEMPLATES);
+    save(LS_TPL, templates); save(LS_SEED, DEFAULT_TEMPLATES);
+    reloadAll(true);
+  }
+}else if(tplUpdateNotice){
+  setTimeout(()=>alert(tplUpdateNotice), 300);
+}
+</script>
+</body>
+</html>
